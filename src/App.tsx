@@ -43,22 +43,129 @@ interface Transaction {
 
 // --- Components ---
 
-const Header = () => (
+const Header = ({ name, avatar, onProfileClick }: { name: string, avatar: string, onProfileClick: () => void }) => (
   <header className="flex items-center justify-between px-6 py-4 bg-transparent">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-brand-950 flex items-center justify-center text-white overflow-hidden">
-        <User size={20} />
+    <button onClick={onProfileClick} className="flex items-center gap-3 text-left">
+      <div className="w-10 h-10 rounded-full bg-brand-950 flex items-center justify-center text-white overflow-hidden text-xl">
+        {avatar}
       </div>
       <div>
         <h2 className="text-xs font-medium text-brand-700 uppercase tracking-wider">Welcome back</h2>
-        <h1 className="text-lg font-bold text-brand-950 font-display">The Fluid Architect</h1>
+        <h1 className="text-lg font-bold text-brand-950 font-display">{name}</h1>
       </div>
-    </div>
+    </button>
     <button className="p-2 rounded-full bg-white shadow-sm text-brand-800 hover:bg-brand-50 transition-colors">
       <Bell size={20} />
     </button>
   </header>
 );
+
+const ProfileModal = ({ 
+  isOpen, 
+  onClose, 
+  name, 
+  avatar, 
+  onSave 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  name: string, 
+  avatar: string, 
+  onSave: (name: string, avatar: string) => void 
+}) => {
+  const [tempName, setTempName] = useState(name);
+  const [tempAvatar, setTempAvatar] = useState(avatar);
+  
+  const avatars = ["🐱", "🐶", "🐰", "🐦", "🌽"]; // 🌽 for Fubuki (corn/fox theme)
+
+  useEffect(() => {
+    if (isOpen) {
+      setTempName(name);
+      setTempAvatar(avatar);
+    }
+  }, [isOpen, name, avatar]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-brand-950/40 backdrop-blur-sm z-[100]"
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-[110] shadow-2xl flex flex-col"
+          >
+            <div className="px-6 py-8 border-b border-brand-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={onClose} className="p-2 rounded-full bg-brand-50 text-brand-800">
+                  <ChevronLeft size={20} />
+                </button>
+                <h2 className="text-xl font-bold text-brand-950 font-display">Edit Profile</h2>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
+              <div>
+                <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-3 block">Name</label>
+                <input 
+                  type="text" 
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  className="w-full p-4 bg-brand-50 rounded-2xl border-2 border-transparent focus:border-brand-300 outline-none font-bold text-brand-950 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-4 block">Choose Avatar</label>
+                <div className="flex justify-between gap-2">
+                  {avatars.map((av) => (
+                    <button
+                      key={av}
+                      onClick={() => setTempAvatar(av)}
+                      className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-90",
+                        tempAvatar === av ? "bg-brand-800 shadow-lg" : "bg-brand-50 hover:bg-brand-100"
+                      )}
+                    >
+                      {av}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-brand-50 space-y-3">
+              <button 
+                onClick={() => {
+                  onSave(tempName, tempAvatar);
+                  onClose();
+                }}
+                className="w-full py-4 bg-brand-800 text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-brand-900 transition-all active:scale-95"
+              >
+                Save Changes
+              </button>
+
+              <button 
+                onClick={onClose}
+                className="w-full py-4 bg-transparent text-brand-400 font-bold text-sm hover:text-brand-600 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const BalanceCard = ({ balance, previousBalance, onTopUp }: { balance: number, previousBalance: number, onTopUp: () => void }) => {
   const diff = balance - previousBalance;
@@ -200,19 +307,23 @@ const TopUpModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: 
             className="fixed inset-0 bg-brand-950/40 backdrop-blur-sm z-[60]"
           />
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] z-[70] px-6 pt-8 pb-12 shadow-2xl max-w-md mx-auto"
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-2">
-                {step !== "amount" && (
-                  <button onClick={() => setStep(step === "emoji" ? "details" : "amount")} className="p-2 rounded-full bg-brand-50 text-brand-800">
-                    <ChevronLeft size={20} />
-                  </button>
-                )}
+            <div className="px-6 py-8 border-b border-brand-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => {
+                    if (step === "amount") onClose();
+                    else setStep(step === "emoji" ? "details" : "amount");
+                  }} 
+                  className="p-2 rounded-full bg-brand-50 text-brand-800"
+                >
+                  <ChevronLeft size={20} />
+                </button>
                 <h2 className="text-xl font-bold text-brand-950 font-display">
                   {step === "amount" ? "Top Up" : step === "details" ? "Reason" : "Custom Detail"}
                 </h2>
@@ -222,128 +333,154 @@ const TopUpModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: 
               </button>
             </div>
 
-            {step === "amount" && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                {/* Toggle */}
-                <div className="flex p-1 bg-brand-50 rounded-2xl mb-8">
-                  <button
-                    onClick={() => setType("expense")}
-                    className={cn(
-                      "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                      type === "expense" ? "bg-white text-brand-900 shadow-sm" : "text-brand-400"
-                    )}
-                  >
-                    支出 (Expense)
-                  </button>
-                  <button
-                    onClick={() => setType("savings")}
-                    className={cn(
-                      "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                      type === "savings" ? "bg-white text-brand-900 shadow-sm" : "text-brand-400"
-                    )}
-                  >
-                    存续 (Savings)
-                  </button>
-                </div>
-
-                {/* Amount Display */}
-                <div className="text-center mb-10">
-                  <p className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-2">Enter Amount</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-3xl font-light text-brand-300">$</span>
-                    <span className="text-5xl font-bold font-display text-brand-950 tracking-tight">{amount}</span>
-                  </div>
-                </div>
-
-                {/* Keypad */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  {keys.map((key) => (
+            <div className="flex-1 overflow-y-auto px-6 py-8">
+              {step === "amount" && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                  {/* Toggle */}
+                  <div className="flex p-1 bg-brand-50 rounded-2xl mb-8">
                     <button
-                      key={key}
-                      onClick={() => handleKeyPress(key)}
+                      onClick={() => setType("expense")}
                       className={cn(
-                        "h-16 rounded-2xl flex items-center justify-center text-xl font-bold transition-all active:scale-90",
-                        key === "delete" ? "text-brand-400" : "bg-brand-50/50 text-brand-900 hover:bg-brand-50"
+                        "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
+                        type === "expense" ? "bg-white text-brand-900 shadow-sm" : "text-brand-400"
                       )}
                     >
-                      {key === "delete" ? <Delete size={24} /> : key}
+                      支出 (Expense)
                     </button>
-                  ))}
-                </div>
-
-                <button 
-                  onClick={handleNext}
-                  className="w-full py-4 bg-brand-800 text-white rounded-2xl font-bold text-lg shadow-lg shadow-brand-900/20 hover:bg-brand-900 transition-all active:scale-95"
-                >
-                  Next
-                </button>
-              </motion.div>
-            )}
-
-            {step === "details" && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                <p className="text-center text-xs font-bold text-brand-400 uppercase tracking-widest mb-6">Select a reason for this {type}</p>
-                <div className="grid grid-cols-1 gap-3">
-                  {reasons.map((r, i) => (
                     <button
-                      key={i}
-                      onClick={() => handleReasonSelect(r)}
-                      className="flex items-center justify-between p-4 bg-brand-50/50 rounded-2xl hover:bg-brand-50 transition-all group"
+                      onClick={() => setType("savings")}
+                      className={cn(
+                        "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
+                        type === "savings" ? "bg-white text-brand-900 shadow-sm" : "text-brand-400"
+                      )}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-brand-600 shadow-sm">
-                          {typeof r.icon === "string" ? <span className="text-xl">{r.icon}</span> : <r.icon size={20} />}
-                        </div>
-                        <span className="font-bold text-brand-900">{r.label}</span>
-                      </div>
-                      <ChevronRight size={20} className="text-brand-300 group-hover:text-brand-600 transition-colors" />
+                      存续 (Savings)
                     </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+                  </div>
 
-            {step === "emoji" && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                <div>
-                  <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-2 block">Custom Reason</label>
-                  <input 
-                    autoFocus
-                    type="text" 
-                    placeholder="What is this for?"
-                    value={customReason}
-                    onChange={(e) => setCustomReason(e.target.value)}
-                    className="w-full p-4 bg-brand-50 rounded-2xl border-2 border-transparent focus:border-brand-300 outline-none font-bold text-brand-950 transition-all"
-                  />
-                </div>
+                  {/* Amount Display */}
+                  <div className="text-center mb-10">
+                    <p className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-2">Enter Amount</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-3xl font-light text-brand-300">$</span>
+                      <span className="text-5xl font-bold font-display text-brand-950 tracking-tight">{amount}</span>
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-3 block">Pick an Icon</label>
-                  <div className="grid grid-cols-6 gap-3 max-h-48 overflow-y-auto p-1">
-                    {EMOJIS.map((emoji) => (
+                  {/* Keypad */}
+                  <div className="grid grid-cols-3 gap-4 mb-8">
+                    {keys.map((key) => (
                       <button
-                        key={emoji}
-                        onClick={() => setSelectedIcon(emoji)}
+                        key={key}
+                        onClick={() => handleKeyPress(key)}
                         className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all active:scale-90",
-                          selectedIcon === emoji ? "bg-brand-800 shadow-lg" : "bg-brand-50 hover:bg-brand-100"
+                          "h-16 rounded-2xl flex items-center justify-center text-xl font-bold transition-all active:scale-90",
+                          key === "delete" ? "text-brand-400" : "bg-brand-50/50 text-brand-900 hover:bg-brand-50"
                         )}
                       >
-                        {emoji}
+                        {key === "delete" ? <Delete size={24} /> : key}
                       </button>
                     ))}
                   </div>
-                </div>
 
-                <button 
-                  onClick={() => handleConfirm(customReason, selectedIcon)}
-                  disabled={!customReason}
-                  className="w-full py-4 bg-brand-800 text-white rounded-2xl font-bold text-lg shadow-lg shadow-brand-900/20 hover:bg-brand-900 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
-                >
-                  Confirm Transaction
-                </button>
-              </motion.div>
-            )}
+                  <div className="space-y-3">
+                    <button 
+                      onClick={handleNext}
+                      className="w-full py-4 bg-brand-800 text-white rounded-2xl font-bold text-lg shadow-lg shadow-brand-900/20 hover:bg-brand-900 transition-all active:scale-95"
+                    >
+                      Next
+                    </button>
+
+                    <button 
+                      onClick={onClose}
+                      className="w-full py-4 bg-transparent text-brand-400 font-bold text-sm hover:text-brand-600 transition-all mt-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === "details" && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                  <p className="text-center text-xs font-bold text-brand-400 uppercase tracking-widest mb-6">Select a reason for this {type}</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {reasons.map((r, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleReasonSelect(r)}
+                        className="flex items-center justify-between p-4 bg-brand-50/50 rounded-2xl hover:bg-brand-50 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-brand-600 shadow-sm">
+                            {typeof r.icon === "string" ? <span className="text-xl">{r.icon}</span> : <r.icon size={20} />}
+                          </div>
+                          <span className="font-bold text-brand-900">{r.label}</span>
+                        </div>
+                        <ChevronRight size={20} className="text-brand-300 group-hover:text-brand-600 transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={onClose}
+                    className="w-full py-4 bg-transparent text-brand-400 font-bold text-sm hover:text-brand-600 transition-all mt-4"
+                  >
+                    Cancel
+                  </button>
+                </motion.div>
+              )}
+
+              {step === "emoji" && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
+                  <div>
+                    <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-3 block">Custom Reason</label>
+                    <input 
+                      autoFocus
+                      type="text" 
+                      placeholder="What is this for?"
+                      value={customReason}
+                      onChange={(e) => setCustomReason(e.target.value)}
+                      className="w-full p-4 bg-brand-50 rounded-2xl border-2 border-transparent focus:border-brand-300 outline-none font-bold text-brand-950 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-brand-400 uppercase tracking-widest mb-4 block">Pick an Icon</label>
+                    <div className="grid grid-cols-6 gap-3 max-h-64 overflow-y-auto p-1">
+                      {EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => setSelectedIcon(emoji)}
+                          className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all active:scale-90",
+                            selectedIcon === emoji ? "bg-brand-800 shadow-lg" : "bg-brand-50 hover:bg-brand-100"
+                          )}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => handleConfirm(customReason, selectedIcon)}
+                      disabled={!customReason}
+                      className="w-full py-4 bg-brand-800 text-white rounded-2xl font-bold text-lg shadow-lg shadow-brand-900/20 hover:bg-brand-900 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
+                    >
+                      Confirm Transaction
+                    </button>
+
+                    <button 
+                      onClick={onClose}
+                      className="w-full py-4 bg-transparent text-brand-400 font-bold text-sm hover:text-brand-600 transition-all mt-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         </>
       )}
@@ -478,7 +615,7 @@ const TransactionsHistoryModal = ({ isOpen, onClose, transactions }: { isOpen: b
   );
 };
 
-const CalendarPanel = ({ transactions }: { transactions: Transaction[] }) => {
+const CalendarPanel = ({ transactions, name, avatar, onProfileClick }: { transactions: Transaction[], name: string, avatar: string, onProfileClick: () => void }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const year = currentDate.getFullYear();
@@ -541,13 +678,15 @@ const CalendarPanel = ({ transactions }: { transactions: Transaction[] }) => {
       {/* Header */}
       <div className="px-6 pt-8 pb-4">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-brand-400">Weilin</span>
-            <div className="flex items-center gap-1">
-              <span className="text-xl font-bold text-brand-950">RM {(totalMonthlyIncome - totalMonthlyExpense).toLocaleString()}</span>
-              <ChevronDown size={16} className="text-brand-400" />
+          <button onClick={onProfileClick} className="flex items-center gap-3 text-left">
+            <div className="w-10 h-10 rounded-full bg-brand-950 flex items-center justify-center text-white overflow-hidden text-xl">
+              {avatar}
             </div>
-          </div>
+            <div>
+              <h2 className="text-xs font-medium text-brand-700 uppercase tracking-wider">Welcome back</h2>
+              <h1 className="text-lg font-bold text-brand-950 font-display">{name}</h1>
+            </div>
+          </button>
           <Search size={24} className="text-brand-400" />
         </div>
 
@@ -689,6 +828,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const [userAvatar, setUserAvatar] = useState("🐱");
   const [balance, setBalance] = useState(0);
   const [income, setIncome] = useState(0);
   const [burn, setBurn] = useState(0);
@@ -723,7 +865,11 @@ export default function App() {
     <div className="max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-white">
       {activeTab === "home" ? (
         <>
-          <Header />
+          <Header 
+            name={userName} 
+            avatar={userAvatar} 
+            onProfileClick={() => setIsProfileOpen(true)} 
+          />
           <main className="mt-2 space-y-6">
             <BalanceCard 
               balance={balance} 
@@ -790,7 +936,12 @@ export default function App() {
           </main>
         </>
       ) : activeTab === "calendar" ? (
-        <CalendarPanel transactions={transactions} />
+        <CalendarPanel 
+          transactions={transactions} 
+          name={userName} 
+          avatar={userAvatar} 
+          onProfileClick={() => setIsProfileOpen(true)} 
+        />
       ) : (
         <div className="flex items-center justify-center h-screen text-brand-400 font-bold uppercase tracking-widest">
           {activeTab} Panel Coming Soon
@@ -813,6 +964,17 @@ export default function App() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         transactions={transactions}
+      />
+
+      <ProfileModal 
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        name={userName}
+        avatar={userAvatar}
+        onSave={(name, avatar) => {
+          setUserName(name);
+          setUserAvatar(avatar);
+        }}
       />
     </div>
   );
